@@ -9,25 +9,28 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [userData, setUserData] = useState(null);
-  const [userCounts, setUserCounts] = useState({
-    numberOfFriends: 0,
-    numberOfGroups: 0,
-    numberOfFriendRequests: 0
+  const [systemStats, setSystemStats] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    newUsersThisWeek: 0,
+    newUsersThisMonth: 0,
+    totalConnections: 0,
+    totalGroups: 0
   });
   const [loading, setLoading] = useState({
-    userCounts: false,
+    systemStats: false,
     userData: false
   });
   const [error, setError] = useState({
-    userCounts: null,
+    systemStats: null,
     userData: null
   });
   
   // Check authentication and get user data
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchData = async () => {
       try {
-        setLoading(prev => ({ ...prev, userData: true }));
+        setLoading(prev => ({ ...prev, userData: true, systemStats: true }));
         
         if (!authService.isLoggedIn()) {
           navigate('/login');
@@ -37,40 +40,25 @@ const Dashboard = () => {
         const user = authService.getCurrentUser();
         setUserData(user);
         
-        // Fetch user counts data separately
-        await fetchUserCounts();
+        // Fetch system statistics
+        const stats = await userService.getUserCounts();
+        setSystemStats(stats);
       } catch (err) {
         setError(prev => ({
           ...prev,
-          userData: err.message || 'Failed to load user data'
+          systemStats: err.message || 'Failed to load system statistics'
         }));
       } finally {
-        setLoading(prev => ({ ...prev, userData: false }));
+        setLoading(prev => ({ ...prev, userData: false, systemStats: false }));
       }
     };
     
-    fetchUserData();
+    fetchData();
   }, [navigate]);
-  
-  // Fetch user counts data
-  const fetchUserCounts = async () => {
-    try {
-      setLoading(prev => ({ ...prev, userCounts: true }));
-      const counts = await userService.getUserCounts();
-      setUserCounts(counts);
-    } catch (err) {
-      setError(prev => ({
-        ...prev,
-        userCounts: err.message || 'Failed to load user counts'
-      }));
-      console.error('Error loading user counts:', err);
-    } finally {
-      setLoading(prev => ({ ...prev, userCounts: false }));
-    }
-  };
   
   const handleLogout = () => {
     authService.logout();
+    navigate('/login');
   };
   
   // Display user initials in the avatar
@@ -96,32 +84,32 @@ const Dashboard = () => {
             <div className="stat-icon">
               <i className="fas fa-users"></i>
             </div>
-            <h3>Active Friends</h3>
-            {loading.userCounts ? (
+            <h3>Total Users</h3>
+            {loading.systemStats ? (
               <p className="stat-value loading">Loading...</p>
-            ) : error.userCounts ? (
+            ) : error.systemStats ? (
               <p className="stat-error">Error loading data</p>
             ) : (
               <>
-                <p className="stat-value">{userCounts.numberOfFriends || 0}</p>
-                <p className="stat-label">Connected friends</p>
+                <p className="stat-value">{systemStats.totalUsers}</p>
+                <p className="stat-label">Registered users</p>
               </>
             )}
           </div>
           
           <div className="stat-card">
             <div className="stat-icon">
-              <i className="fas fa-comment-dots"></i>
+              <i className="fas fa-user-clock"></i>
             </div>
-            <h3>Active Groups</h3>
-            {loading.userCounts ? (
+            <h3>Active Users</h3>
+            {loading.systemStats ? (
               <p className="stat-value loading">Loading...</p>
-            ) : error.userCounts ? (
+            ) : error.systemStats ? (
               <p className="stat-error">Error loading data</p>
             ) : (
               <>
-                <p className="stat-value">{userCounts.numberOfGroups || 0}</p>
-                <p className="stat-label">Active chat groups</p>
+                <p className="stat-value">{systemStats.activeUsers}</p>
+                <p className="stat-label">Currently online</p>
               </>
             )}
           </div>
@@ -130,26 +118,53 @@ const Dashboard = () => {
             <div className="stat-icon">
               <i className="fas fa-user-plus"></i>
             </div>
-            <h3>Friend Requests</h3>
-            {loading.userCounts ? (
+            <h3>New Users</h3>
+            {loading.systemStats ? (
               <p className="stat-value loading">Loading...</p>
-            ) : error.userCounts ? (
+            ) : error.systemStats ? (
               <p className="stat-error">Error loading data</p>
             ) : (
               <>
-                <p className="stat-value">{userCounts.numberOfFriendRequests || 0}</p>
-                <p className="stat-label">Pending requests</p>
+                <p className="stat-value">{systemStats.newUsersThisWeek}</p>
+                <p className="stat-label">This week</p>
+                <p className="stat-value" style={{ fontSize: '1.2rem', marginTop: '0.5rem' }}>{systemStats.newUsersThisMonth}</p>
+                <p className="stat-label">This month</p>
               </>
             )}
           </div>
           
           <div className="stat-card">
             <div className="stat-icon">
-              <i className="fas fa-exclamation-triangle"></i>
+              <i className="fas fa-network-wired"></i>
             </div>
-            <h3>Reports</h3>
-            <p className="stat-value">12</p>
-            <p className="stat-change negative">+2 from last week</p>
+            <h3>Connections</h3>
+            {loading.systemStats ? (
+              <p className="stat-value loading">Loading...</p>
+            ) : error.systemStats ? (
+              <p className="stat-error">Error loading data</p>
+            ) : (
+              <>
+                <p className="stat-value">{systemStats.totalConnections}</p>
+                <p className="stat-label">Total friend connections</p>
+              </>
+            )}
+          </div>
+          
+          <div className="stat-card">
+            <div className="stat-icon">
+              <i className="fas fa-users-rectangle"></i>
+            </div>
+            <h3>Groups</h3>
+            {loading.systemStats ? (
+              <p className="stat-value loading">Loading...</p>
+            ) : error.systemStats ? (
+              <p className="stat-error">Error loading data</p>
+            ) : (
+              <>
+                <p className="stat-value">{systemStats.totalGroups}</p>
+                <p className="stat-label">Active chat groups</p>
+              </>
+            )}
           </div>
         </div>
         
