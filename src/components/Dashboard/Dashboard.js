@@ -1,15 +1,88 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../../logo.webp';
 import './Dashboard.css';
+import authService from '../../services/authService';
+import userService from '../../services/userService';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [userData, setUserData] = useState(null);
+  const [userCounts, setUserCounts] = useState({
+    numberOfFriends: 0,
+    numberOfGroups: 0,
+    numberOfFriendRequests: 0
+  });
+  const [loading, setLoading] = useState({
+    userCounts: false,
+    userData: false
+  });
+  const [error, setError] = useState({
+    userCounts: null,
+    userData: null
+  });
+  
+  // Check authentication and get user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setLoading(prev => ({ ...prev, userData: true }));
+        
+        if (!authService.isLoggedIn()) {
+          navigate('/login');
+          return;
+        }
+        
+        const user = authService.getCurrentUser();
+        setUserData(user);
+        
+        // Fetch user counts data separately
+        await fetchUserCounts();
+      } catch (err) {
+        setError(prev => ({
+          ...prev,
+          userData: err.message || 'Failed to load user data'
+        }));
+      } finally {
+        setLoading(prev => ({ ...prev, userData: false }));
+      }
+    };
+    
+    fetchUserData();
+  }, [navigate]);
+  
+  // Fetch user counts data
+  const fetchUserCounts = async () => {
+    try {
+      setLoading(prev => ({ ...prev, userCounts: true }));
+      const counts = await userService.getUserCounts();
+      setUserCounts(counts);
+    } catch (err) {
+      setError(prev => ({
+        ...prev,
+        userCounts: err.message || 'Failed to load user counts'
+      }));
+      console.error('Error loading user counts:', err);
+    } finally {
+      setLoading(prev => ({ ...prev, userCounts: false }));
+    }
+  };
   
   const handleLogout = () => {
-    // In real app, clear auth token, etc.
-    navigate('/login');
+    authService.logout();
+  };
+  
+  // Display user initials in the avatar
+  const getUserInitials = () => {
+    if (userData && userData.firstName && userData.lastName) {
+      return `${userData.firstName[0]}${userData.lastName[0]}`.toUpperCase();
+    } else if (userData && userData.firstName) {
+      return userData.firstName[0].toUpperCase();
+    } else if (userData && userData.email) {
+      return userData.email[0].toUpperCase();
+    }
+    return 'AD'; // Default
   };
   
   const tabContent = {
@@ -23,27 +96,51 @@ const Dashboard = () => {
             <div className="stat-icon">
               <i className="fas fa-users"></i>
             </div>
-            <h3>Active Users</h3>
-            <p className="stat-value">1,245</p>
-            <p className="stat-change positive">+12% from last week</p>
+            <h3>Active Friends</h3>
+            {loading.userCounts ? (
+              <p className="stat-value loading">Loading...</p>
+            ) : error.userCounts ? (
+              <p className="stat-error">Error loading data</p>
+            ) : (
+              <>
+                <p className="stat-value">{userCounts.numberOfFriends || 0}</p>
+                <p className="stat-label">Connected friends</p>
+              </>
+            )}
           </div>
           
           <div className="stat-card">
             <div className="stat-icon">
               <i className="fas fa-comment-dots"></i>
             </div>
-            <h3>Total Messages</h3>
-            <p className="stat-value">8,324</p>
-            <p className="stat-change positive">+5% from last week</p>
+            <h3>Active Groups</h3>
+            {loading.userCounts ? (
+              <p className="stat-value loading">Loading...</p>
+            ) : error.userCounts ? (
+              <p className="stat-error">Error loading data</p>
+            ) : (
+              <>
+                <p className="stat-value">{userCounts.numberOfGroups || 0}</p>
+                <p className="stat-label">Active chat groups</p>
+              </>
+            )}
           </div>
           
           <div className="stat-card">
             <div className="stat-icon">
               <i className="fas fa-user-plus"></i>
             </div>
-            <h3>New Users</h3>
-            <p className="stat-value">64</p>
-            <p className="stat-change positive">+3% from last week</p>
+            <h3>Friend Requests</h3>
+            {loading.userCounts ? (
+              <p className="stat-value loading">Loading...</p>
+            ) : error.userCounts ? (
+              <p className="stat-error">Error loading data</p>
+            ) : (
+              <>
+                <p className="stat-value">{userCounts.numberOfFriendRequests || 0}</p>
+                <p className="stat-label">Pending requests</p>
+              </>
+            )}
           </div>
           
           <div className="stat-card">
@@ -168,6 +265,8 @@ const Dashboard = () => {
     )
   };
   
+  if (!userData) return null;
+  
   return (
     <div className="dashboard-container">
       <div className="sidebar">
@@ -241,8 +340,8 @@ const Dashboard = () => {
               <span className="badge">3</span>
             </button>
             <div className="admin-profile">
-              <div className="admin-avatar">AD</div>
-              <span className="admin-name">Admin</span>
+              <div className="admin-avatar">{getUserInitials()}</div>
+              <span className="admin-name">{userData.firstName || 'Admin'}</span>
             </div>
           </div>
         </header>

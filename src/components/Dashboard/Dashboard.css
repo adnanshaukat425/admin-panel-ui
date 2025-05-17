@@ -284,6 +284,24 @@
   color: #f44336;
 }
 
+.stat-value.loading {
+  color: #888;
+  font-size: 1.2rem;
+}
+
+.stat-error {
+  color: #d32f2f;
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0;
+}
+
 /* Dashboard Row & Cards */
 .dashboard-row {
   display: grid;

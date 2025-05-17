@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../../logo.webp';
 import './Login.css';
+import authService from '../../services/authService';
 
 const Login = () => {
   const navigate = useNavigate();
   const [credentials, setCredentials] = useState({
-    username: '',
+    email: '',
     password: ''
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Check if user is already logged in
+  useEffect(() => {
+    if (authService.isLoggedIn()) {
+      navigate('/dashboard');
+    }
+  }, [navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -20,17 +28,32 @@ const Login = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (credentials.username && credentials.password) {
+    
+    // Form validation
+    if (!credentials.email || !credentials.password) {
+      setError('Please enter both email and password');
+      return;
+    }
+
+    try {
       setIsLoading(true);
-      // Simulate API call with timeout
-      setTimeout(() => {
-        setIsLoading(false);
+      setError('');
+      
+      // Call login API
+      const result = await authService.login(credentials.email, credentials.password);
+      
+      if (result) {
+        // Redirect to dashboard on successful login
         navigate('/dashboard');
-      }, 800);
-    } else {
-      setError('Please enter both username and password');
+      } else {
+        setError('Login failed. Please check your credentials.');
+      }
+    } catch (err) {
+      setError(err.message || 'Authentication failed. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -47,17 +70,17 @@ const Login = () => {
           {error && <div className="error-message">{error}</div>}
           
           <div className="form-group">
-            <label htmlFor="username">Username</label>
+            <label htmlFor="email">Email</label>
             <div className="input-icon-wrapper">
-              <i className="input-icon fas fa-user"></i>
+              <i className="input-icon fas fa-envelope"></i>
               <input
-                type="text"
-                id="username"
-                name="username"
-                value={credentials.username}
+                type="email"
+                id="email"
+                name="email"
+                value={credentials.email}
                 onChange={handleChange}
-                placeholder="Enter your username"
-                autoComplete="username"
+                placeholder="Enter your email"
+                autoComplete="email"
               />
             </div>
           </div>
