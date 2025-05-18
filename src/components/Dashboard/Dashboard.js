@@ -4,6 +4,7 @@ import logo from '../../logo.webp';
 import './Dashboard.css';
 import authService from '../../services/authService';
 import userService from '../../services/userService';
+import UserManagement from '../UserManagement/UserManagement';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -249,14 +250,7 @@ const Dashboard = () => {
       </>
     ),
     users: (
-      <>
-        <h2>User Management</h2>
-        <p className="section-description">View and manage all user accounts</p>
-        <div className="user-management-placeholder">
-          <i className="fas fa-users placeholder-icon"></i>
-          <p>User management content will be displayed here</p>
-        </div>
-      </>
+      <UserManagement />
     ),
     messages: (
       <>
